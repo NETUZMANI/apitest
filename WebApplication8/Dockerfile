@@ -1,22 +1,15 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
-WORKDIR /src
-COPY ["WebApplication8/WebApplication8.csproj", "WebApplication8/"]
-RUN dotnet restore "WebApplication8/WebApplication8.csproj"
-COPY . .
-WORKDIR "/src/WebApplication8"
-RUN dotnet build "WebApplication8.csproj" -c Release -o /app/build
+COPY *.csproj .
 
-FROM build AS publish
-RUN dotnet publish "WebApplication8.csproj" -c Release -o /app/publish
+RUN dotnet restore
 
-FROM base AS final
+COPY . ./
+
+RUN dotnet publish --no-restore -c Release -o out
+
+FROM mcr.microsoft.com/dotnet/core/asp.net:3.1
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "WebApplication8.dll"]
+COPY  --from=build-env /pp/out .
+ENTRYPOINT ["dotnet","Api.dll"]
